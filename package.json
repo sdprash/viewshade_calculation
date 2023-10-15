@@ -11,6 +11,7 @@
   "dependencies": {
     "@turf/helpers": "^6.5.0",
     "@turf/sector": "^6.5.0",
+    "axios": "^1.5.1",
     "geojson2shp": "^0.5.0"
   }
 }

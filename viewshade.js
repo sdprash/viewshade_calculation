@@ -1,7 +1,8 @@
-const { point } = require('@turf/helpers');
+const { point, bearingToAzimuth } = require('@turf/helpers');
 const sector = require('@turf/sector');
 const { readFileSync, writeFileSync } = require('node:fs');
-const {convert} = require('geojson2shp')
+const {convert} = require('geojson2shp');
+const axios = require('axios');
 
 const get_bearing_angle = value => {
   if (value <= -180) {
@@ -31,28 +32,40 @@ const read_csv_data = async filename => {
   return data;
 };
 
+const get_topo_viewshed = async info => {
+  console.log(info);
+  const vs = await axios.get('http://34.133.228.94:8080/viewshed_geojson', {
+    params: info
+  });
+  return vs?.data;
+};
+
 const evaluate = async filename => {
   const data = await read_csv_data(filename);
-  const sector_geojsons = [];
+  const viewsheds_geojsons = [];
   for (const info of data) {
     const { latitude, longitude, horizontal_pose, horizontal_fov } = info;
-    const center = point([ longitude, latitude ]);
-    const radius = 5; // in kms
     const fov_diff = horizontal_fov / 2;
-    const bearing_1 = get_bearing_angle(horizontal_pose - fov_diff);
-    const bearing_2 = get_bearing_angle(horizontal_pose + fov_diff);
-    const sector_geojson = sector(center, radius, bearing_1, bearing_2);
-    sector_geojsons?.push(sector_geojson);
+    const bearing_1 = bearingToAzimuth(get_bearing_angle(horizontal_pose - fov_diff));
+    const bearing_2 = bearingToAzimuth(get_bearing_angle(horizontal_pose + fov_diff));
+    const viewshed_geojson = await get_topo_viewshed({
+      lat: latitude,
+      lng: longitude,
+      hor_start: bearing_1,
+      hor_end: bearing_2,
+      distance: 1
+    });
+    viewsheds_geojsons?.push(viewshed_geojson);
   }
 
   // generate geojson csv
-  const geojson_file_content = ['geojson', ...sector_geojsons]?.map(geojson => JSON.stringify(geojson))?.join("\n");
+  const geojson_file_content = ['geojson', ...viewsheds_geojsons]?.map(geojson => JSON.stringify(geojson))?.join("\n");
   writeFileSync('geojson.csv', geojson_file_content);
 
   // create shapefile
   const geojson_collection = {
     type: 'FeatureCollection',
-    features: sector_geojsons
+    features: viewsheds_geojsons
   };
   await convert(geojson_collection, 'viewshade_shapefile.zip', {
     layer: 'viewshades',
