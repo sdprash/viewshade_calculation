@@ -9,7 +9,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@mapbox/shp-write": "^0.4.3",
     "@turf/helpers": "^6.5.0",
     "@turf/sector": "^6.5.0",
     "geojson2shp": "^0.5.0"
