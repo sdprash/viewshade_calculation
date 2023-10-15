@@ -32,6 +32,7 @@ const read_csv_data = async filename => {
   return data;
 };
 
+// https://github.com/fxdawnn/early-fire-detection/blob/main/website/viewshed.js
 const get_topo_viewshed = async info => {
   console.log(info);
   const vs = await axios.get('http://34.133.228.94:8080/viewshed_geojson', {
@@ -51,9 +52,9 @@ const evaluate = async filename => {
     const viewshed_geojson = await get_topo_viewshed({
       lat: latitude,
       lng: longitude,
-      hor_start: bearing_1,
-      hor_end: bearing_2,
-      distance: 1
+      hor_start: bearing_1, // 0-360 degrees clockwise. North is 0
+      hor_end: bearing_2, // 0-360 degrees clockwise. North is 0
+      distance: 5 //kms
     });
     viewsheds_geojsons?.push(viewshed_geojson);
   }
